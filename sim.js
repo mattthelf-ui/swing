@@ -1,6 +1,6 @@
 // Swing — pure simulation (shared by game + tests)
 (function(root){
-const G=1500, RUN=330, R=14, GRAB_R=200, PUMP=2.5, VMAX=900, DT=1/120, BUF=0.15;
+const G=1500, RUN=330, R=14, GRAB_R=200, PUMP=2.5, VMAX=900, DT=1/120, RELEASE_BOOST=80, BUF=0.15;
 const LEVELS=[
  {name:"Warm-up", finish:3350,
   ground:[[0,700],[1050,1500],[1860,2650],[3050,3500]], groundY:420,
@@ -23,7 +23,7 @@ function nearest(s){const L=LEVELS[s.li],p=s.p;let best=-1,bd=GRAB_R;
 function attach(s,i){const p=s.p,q=hookPos(LEVELS[s.li].hooks[i],s.t),dx=p.x-q.x,dy=p.y-q.y;
  p.len=Math.hypot(dx,dy);p.th=Math.atan2(dx,dy);if(p.mode==='ground'){const mx=LEVELS[s.li].groundY-R-q.y-6;if(p.len>mx){p.len=Math.max(50,mx);p.x=q.x+p.len*Math.sin(p.th);p.y=q.y+p.len*Math.cos(p.th);}}const tx=Math.cos(p.th),ty=-Math.sin(p.th);
  p.w=(p.vx*tx+p.vy*ty)/p.len;p.mode='swing';p.hook=i;}
-function release(s){const p=s.p;p.vx=p.len*p.w*Math.cos(p.th);p.vy=-p.len*p.w*Math.sin(p.th);p.mode='air';s.last=p.hook;p.hook=-1;}
+function release(s){const p=s.p;p.vx=p.len*p.w*Math.cos(p.th);p.vy=-p.len*p.w*Math.sin(p.th);p.vx+=RELEASE_BOOST;p.mode='air';s.last=p.hook;p.hook=-1;}
 function step(s,inp){if(s.dead||s.done)return s;const L=LEVELS[s.li],p=s.p,ev=[];const t0=s.t;s.t+=DT;
  // hold to grab: while held and not attached, catch the first reachable point; letting go launches
  if(p.mode==='swing'&&!inp.grab){release(s);ev.push('release');}
@@ -44,6 +44,6 @@ function step(s,inp){if(s.dead||s.done)return s;const L=LEVELS[s.li],p=s.p,ev=[]
  if(p.y>900){s.dead=true;ev.push('die');}
  if(!s.dead&&p.x>=L.finish){s.done=true;ev.push('done');}
  s.ev=ev;return s;}
-const api={BUF,G,RUN,R,GRAB_R,DT,LEVELS,create,step,nearest,hookPos,platX,solids,release,attach};
+const api={RELEASE_BOOST,BUF,G,RUN,R,GRAB_R,DT,LEVELS,create,step,nearest,hookPos,platX,solids,release,attach};
 if(typeof module!=='undefined')module.exports=api;else root.SwingSim=api;
 })(this);

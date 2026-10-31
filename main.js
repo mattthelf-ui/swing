@@ -47,7 +47,7 @@ function tickInner(now){let dt=Math.min(.05,(now-last)/1000);last=now;if(screen=
   if(s.dead){deathT-=S.DT;if(deathT<=0&&!bot)restart();else if(deathT<=0){bot=null;}continue;}
   if(s.done)break;
   S.step(s,inp);
-  for(const e of s.ev){if(e==='grab'){blip(660,.08);burst(s.p.x,s.p.y,C.hi,6);}if(e==='release'){blip(440,.1,'triangle');}if(e==='land')blip(220,.06);
+  for(const e of s.ev){if(e==='grab'){blip(660,.08);burst(s.p.x,s.p.y,C.hi,6);}if(e==='release'){blip(440,.1,'triangle');for(let i=0;i<8;i++)parts.push({x:s.p.x-10,y:s.p.y+(Math.random()-.5)*14,vx:-140-Math.random()*120,vy:(Math.random()-.5)*60,l:.3,col:'#ffffff'});}if(e==='land')blip(220,.06);
    if(e==='die'){blip(110,.3,'sawtooth');burst(s.p.x,s.p.y,C.player,30);deathT=.45;}
    if(e==='done'){blip(880,.15);setTimeout(()=>blip(1320,.25),120);burst(s.p.x,s.p.y,C.hi,50);const t=s.t;if(!best[li]||t<best[li])best[li]=t;screen='done';sel=0;doneT=t;}}
   if(s.p.mode!=='ground')trail.push({x:s.p.x,y:s.p.y,l:.35});

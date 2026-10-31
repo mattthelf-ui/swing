@@ -11,8 +11,8 @@ const S=require('../sim.js');const assert=require('assert');let n=0;const ok=(c,
 // release tangential velocity
 {const s=S.create(0);s.p.mode='air';s.p.x=830-100;s.p.y=370;s.p.vx=300;s.p.vy=0;S.step(s,{grab:true,dir:0});for(let i=0;i<20;i++)S.step(s,{grab:true,dir:0});
  const p=s.p,th=p.th,w=p.w,L=p.len;S.step(s,{grab:false,dir:0});const ex=L*w*Math.cos(th),ey=-L*w*Math.sin(th);
- ok(s.p.mode==='air'&&Math.abs(s.p.vx-ex)<1&&Math.abs(s.p.vy-(ey+S.G*S.DT))<1,`release launches tangentially v=(${s.p.vx.toFixed(0)},${s.p.vy.toFixed(0)})`);
- const r=[s.p.x-830,s.p.y-270];ok(Math.abs(r[0]*s.p.vx+r[1]*(s.p.vy-S.G*S.DT))/Math.hypot(...r)/Math.hypot(s.p.vx,s.p.vy)<0.05,'launch velocity perpendicular to rope');}
+ ok(s.p.mode==='air'&&Math.abs(s.p.vx-(ex+S.RELEASE_BOOST))<1&&Math.abs(s.p.vy-(ey+S.G*S.DT))<1,`release launches tangentially v=(${s.p.vx.toFixed(0)},${s.p.vy.toFixed(0)})`);
+ const r=[s.p.x-830,s.p.y-270];ok(Math.abs(r[0]*(s.p.vx-S.RELEASE_BOOST)+r[1]*(s.p.vy-S.G*S.DT))/Math.hypot(...r)/Math.hypot(s.p.vx-S.RELEASE_BOOST,s.p.vy)<0.05,'launch velocity perpendicular to rope');}
 // pumping increases amplitude
 {const run=d=>{const s=S.create(0);s.p.mode='air';s.p.x=830-60;s.p.y=270+150;s.p.vx=0;s.p.vy=0;S.attach(s,0);let m=0;for(let i=0;i<600;i++){S.step(s,{grab:true,dir:d*Math.sign(s.p.w||1)});m=Math.max(m,Math.abs(s.p.th));}return m;};
  const a=run(0),b=run(1);ok(b>a*1.3,`pumping raises swing amplitude ${a.toFixed(2)}→${b.toFixed(2)} rad`);}

@@ -106,7 +106,7 @@ function drawWorldArt(){const L=S.LEVELS[li],p=s.p,T=s.t;const target=p.x-VW*0.3
  for(const g of L.ground){if(g[1]<x0||g[0]>x1)continue;const gy=L.groundY;
   for(let x=g[0];x<g[1];x+=32){const n=x===g[0]?'girder_top_left':(x+32>=g[1]?'girder_top_right':'girder_top_mid');const w=Math.min(32,g[1]-x);
    if(n==='girder_top_right'&&w<32){dimg('girder_top_right',g[1]-32,gy,32,32);}else dimg(n,x,gy,32,32);}
-  for(let x=g[0]+24;x<g[1]-40;x+=128)for(let y=gy+32;y<VH;y+=32)dimg('scaffold',x,y,32,32);
+  for(let x=g[0];x<g[1];x+=32)dimg('girder_fill',x,gy+32,Math.min(32,g[1]-x),32);for(let x=g[0]+24;x<g[1]-40;x+=128)for(let y=gy+64;y<VH;y+=32)dimg('scaffold',x,y,32,32);
   for(let x=g[0]+90;x<g[1]-120;x+=260){const sp=L.spikes.some(k=>x+60>k[0]-60&&x<k[1]+60);if(sp)continue;
    if(((x/260)|0)%2)dimg('crate',x,gy-48*0.7,48*0.7,48*0.7);else dimg('scrap_pile',x,gy-48*0.8,64*0.8,48*0.8);}}
  // spikes (pivot bottom-centre, base plate on girder top)
@@ -127,9 +127,12 @@ function drawWorldArt(){const L=S.LEVELS[li],p=s.p,T=s.t;const target=p.x-VW*0.3
   if(p.mode==='swing'&&p.hook===i)dimg('latch_glow_0'+(Math.floor(T*12)%3),q.x-24,q.y-24,48,48);});
  // player
  const sinceGrab=T-(evT.grab??-9),sinceRel=T-(evT.release??-9),sinceLand=T-(evT.land??-9);
- if(s.dead){const k=Math.floor((0.45-Math.max(0,deathT))/0.45*6);dimg('destroyed_0'+Math.max(0,Math.min(5,k)),p.x-64*BOT,p.y+S.R-116*BOT,128*BOT,128*BOT);}
- else if(p.mode==='swing'){const fr=sinceGrab<0.12?'latch_0'+(sinceGrab<0.06?0:1):'swing_0'+Math.max(0,Math.min(6,Math.round((p.th+1.2)/2.4*6)));
-  const q=S.hookPos(L.hooks[p.hook],T),hw=handWorld(fr,p);chain(hw.x,hw.y,q.x,q.y,true);drawBot(fr,p.x,p.y,-p.th,BOT,true);}
+ if(s.dead){const el=0.45-Math.max(0,deathT),k=Math.floor((el-0.12)/0.33*6);dimg(el<0.12?'hit_0'+(el<0.06?0:1):'destroyed_0'+Math.max(0,Math.min(5,k)),p.x-64*BOT,p.y+S.R-116*BOT,128*BOT,128*BOT);}
+ else if(p.mode==='swing'){const FC=0.1;const fr=sinceGrab<FC?'fire_chain_0'+Math.min(3,Math.floor(sinceGrab/FC*4)):sinceGrab<FC+0.08?'latch_0'+(sinceGrab<FC+0.04?0:1):'swing_0'+Math.max(0,Math.min(6,Math.round((p.th+1.2)/2.4*6)));
+  const q=S.hookPos(L.hooks[p.hook],T),hw=handWorld(fr,p);
+  if(sinceGrab<FC){const f=Math.max(0.15,sinceGrab/FC),tx=hw.x+(q.x-hw.x)*f,ty=hw.y+(q.y-hw.y)*f;chain(hw.x,hw.y,tx,ty,false);cx.save();cx.translate(tx,ty);cx.rotate(Math.atan2(q.y-hw.y,q.x-hw.x));cx.drawImage(IM('magnet_head'),-12,-12,24,24);cx.restore();}
+  else{chain(hw.x,hw.y,q.x,q.y,true);cx.save();cx.translate(q.x,q.y);cx.rotate(Math.atan2(q.y-hw.y,q.x-hw.x));cx.drawImage(IM('magnet_head_active'),-12,-12,24,24);cx.restore();}
+  drawBot(fr,p.x,p.y,-p.th,BOT,true);}
  else if(p.mode==='air'){const fr=sinceRel<0.28?'release_0'+Math.min(3,Math.floor(sinceRel/0.07)):'fall_0'+(Math.floor(T*8)%2);drawBot(fr,p.x,p.y+S.R,0);}
  else{const fr=sinceLand<0.12?'land_0'+(sinceLand<0.06?0:1):'run_0'+(Math.floor(T*14)%6);drawBot(fr,p.x,p.y+S.R,0);}
  for(const pt of parts){cx.globalAlpha=Math.max(0,pt.l/.6);cx.fillStyle=pt.col;cx.fillRect(pt.x-3,pt.y-3,6,6);}cx.globalAlpha=1;
@@ -147,7 +150,7 @@ function draw(){cx.setTransform(1,0,0,1,0,0);cx.fillStyle=C.sky;cx.fillRect(0,0,
    if(best[i]){txt('✓ '+best[i].toFixed(1)+'s',x+w-12,y+60,14,'#3ec46d','right');}menuBoxes.push({x,y,w,h,i});});
   txt(`${done}/${S.LEVELS.length} cleared`,VW/2-130,146,14,"#3ec46d");
   txt('Press SPACE/↑/W or screen to grab   •   let go to launch   •   ←/→, A/D or bottom corners = pump   •   R = restart',VW/2,522,14);}
- else{if(ART.ok)drawWorldArt();else drawWorld();if(screen==='done'){cx.fillStyle=ART.ok?'rgba(10,14,28,.72)':'rgba(255,255,255,.75)';cx.fillRect(0,0,VW,VH);txt('Level complete!',VW/2,170,56,C.player);
+ else{if(ART.ok)drawWorldArt();else drawWorld();if(screen==='done'){cx.fillStyle=ART.ok?'rgba(10,14,28,.72)':'rgba(255,255,255,.75)';cx.fillRect(0,0,VW,VH);txt('Level complete!',VW/2,170,56,C.player);if(ART.ok)drawBot('idle_0'+(Math.floor(performance.now()/180)%4),VW/2,470,0,0.9,false);
   txt(`Time ${doneT.toFixed(2)}s   •   Attempts ${attempts}`,VW/2,225,24);
   const hasNext=li+1<S.LEVELS.length;button(VW/2-330,280,200,70,hasNext?'Next level':'—',0,sel===0);button(VW/2-100,280,200,70,'Replay',1,sel===1);button(VW/2+130,280,200,70,'Menu',2,sel===2);}}
  cx.restore();}

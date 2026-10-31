@@ -1,0 +1,6 @@
+const pup=require('puppeteer-core');(async()=>{const b=await pup.launch({executablePath:'/usr/bin/google-chrome',args:['--no-sandbox']});const p=await b.newPage();await p.setViewport({width:960,height:540});const errs=[];p.on('pageerror',e=>errs.push(String(e)));p.on('console',m=>{if(m.type()==='error')errs.push(m.text())});
+await p.goto(process.argv[2]||'file:///workspace/swing/index.html');await p.waitForFunction(()=>window.__swing.art().ok);
+await p.evaluate(()=>window.__swing.start(0));await p.waitForFunction(()=>window.__swing.state.p.x>690);await p.keyboard.down('Space');await new Promise(r=>setTimeout(r,45));await p.screenshot({path:'/workspace/swing/shots/art-firechain.png'});
+await new Promise(r=>setTimeout(r,500));await p.keyboard.up('Space');await p.waitForFunction(()=>window.__swing.state.dead,{timeout:8000});await new Promise(r=>setTimeout(r,60));await p.screenshot({path:'/workspace/swing/shots/art-hit.png'});
+await p.evaluate(()=>{window.__swing.state.done=true;window.__swing.setScreen('done')});await new Promise(r=>setTimeout(r,200));await p.screenshot({path:'/workspace/swing/shots/art-complete.png'});
+console.log(errs.length?'ERR '+errs:'PASS no console errors');await b.close();})();

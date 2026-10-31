@@ -10,7 +10,7 @@ let ac=null;function blip(f,d,type){try{ac=ac||new AudioContext();const o=ac.cre
 function start(i){bot=null;li=i;s=S.create(i);screen='play';camX=0;parts=[];trail=[];}
 function restart(){attempts++;start(li);}
 function burst(x,y,col,n){for(let i=0;i<n;i++){const a=Math.random()*6.28,v=60+Math.random()*260;parts.push({x,y,vx:Math.cos(a)*v,vy:Math.sin(a)*v-80,l:.6,col});}}
-function menuAct(){if(screen==='title'){start(sel);attempts=1;}else if(screen==='done'){if(sel===0&&li+1<S.LEVELS.length){attempts=1;start(li+1);}else if(sel===1){attempts=1;start(li);}else{screen='title';sel=0;}}}
+function menuAct(){if(screen==='title'){attempts=1;start(sel);}else if(screen==='done'){if(sel===0&&li+1<S.LEVELS.length){attempts=1;start(li+1);}else if(sel===1){attempts=1;start(li);}else{screen='title';sel=0;}}}
 addEventListener('keydown',e=>{const k=e.code;if(keys[k])return;keys[k]=true;
  if(['Space','ArrowUp','ArrowDown','ArrowLeft','ArrowRight'].includes(k))e.preventDefault();
  if(screen!=='play'){const n=screen==='title'?S.LEVELS.length:3;
@@ -21,18 +21,24 @@ addEventListener('keydown',e=>{const k=e.code;if(keys[k])return;keys[k]=true;
 addEventListener('keyup',e=>{keys[e.code]=false;});
 function tpos(t){const r=cv.getBoundingClientRect(),d=devicePixelRatio||1;return {x:((t.clientX-r.left)*d-ox)/scale,y:((t.clientY-r.top)*d-oy)/scale};}
 let menuBoxes=[];
-function onDown(pt,id){if(screen!=='play'){for(const b of menuBoxes)if(pt.x>b.x&&pt.x<b.x+b.w&&pt.y>b.y&&pt.y<b.y+b.h){sel=b.i;menuAct();}return;}
+function onDown(pt){if(screen!=='play'){let hit=null;const P=18;for(const b of menuBoxes)if(pt.x>b.x-P&&pt.x<b.x+b.w+P&&pt.y>b.y-P&&pt.y<b.y+b.h+P){hit=b;break;}
+  if(hit){if(hit.i!=='start')sel=hit.i;}else if(screen!=='title')return;
+  if(screen==='title'){attempts=1;start(sel);}else menuAct();return;}
  if(pt.x>VW-70&&pt.y<60){restart();return;}touchGrab=true;}
 cv.addEventListener('pointerdown',e=>{e.preventDefault();onDown(tpos(e));ptrs[e.pointerId]=tpos(e);updDir();});
 cv.addEventListener('pointermove',e=>{if(ptrs[e.pointerId]){ptrs[e.pointerId]=tpos(e);updDir();}});
-const ptrs={};function up(e){delete ptrs[e.pointerId];if(!Object.keys(ptrs).length)touchGrab=false;updDir();}
+const ptrs={};
+if(!window.PointerEvent){cv.addEventListener('touchstart',e=>{e.preventDefault();for(const t of e.changedTouches){onDown(tpos(t));ptrs[t.identifier]=tpos(t);}updDir();},{passive:false});
+ const te=e=>{for(const t of e.changedTouches)delete ptrs[t.identifier];if(!Object.keys(ptrs).length)touchGrab=false;updDir();};cv.addEventListener('touchend',te);cv.addEventListener('touchcancel',te);
+ cv.addEventListener('mousedown',e=>{onDown(tpos(e));});addEventListener('mouseup',()=>{if(!Object.keys(ptrs).length)touchGrab=false;});}function up(e){delete ptrs[e.pointerId];if(!Object.keys(ptrs).length)touchGrab=false;updDir();}
 cv.addEventListener('pointerup',up);cv.addEventListener('pointercancel',up);
 function updDir(){touchDir=0;for(const k in ptrs){const p=ptrs[k];if(p.y>VH*0.55)touchDir=p.x<VW/2?-1:1;}}
 // test hooks
 const q=new URLSearchParams(location.search);
-window.__swing={start,get state(){return s},get screen(){return screen},playBot(i,seq,A,CH){attempts=1;start(i);bot={seq,A,CH};botI=0;},setScreen(x){screen=x}};
+window.__swing={boxes:()=>menuBoxes,start,get state(){return s},get screen(){return screen},playBot(i,seq,A,CH){attempts=1;start(i);bot={seq,A,CH};botI=0;},setScreen(x){screen=x}};
 let acc=0,last=performance.now();
-function tick(now){let dt=Math.min(.05,(now-last)/1000);last=now;if(screen==='play'){acc+=dt;
+function tick(now){try{tickInner(now);}catch(e){console.error(e);requestAnimationFrame(tick);}}
+function tickInner(now){let dt=Math.min(.05,(now-last)/1000);last=now;if(screen==='play'){acc+=dt;
  while(acc>=S.DT){acc-=S.DT;
   if(bot){const a=bot.A[bot.seq[Math.floor(botI/bot.CH)]]||{grab:false,dir:0};botI++;inp.grab=a.grab;inp.dir=a.dir;}
   else{inp.grab=!!(keys.Space||keys.ArrowUp||keys.KeyW||touchGrab);inp.dir=(keys.ArrowRight||keys.KeyD?1:0)-(keys.ArrowLeft||keys.KeyA?1:0)||touchDir;}
@@ -46,9 +52,9 @@ function tick(now){let dt=Math.min(.05,(now-last)/1000);last=now;if(screen==='pl
  }}
  for(const p of parts){p.vy+=900*dt;p.x+=p.vx*dt;p.y+=p.vy*dt;p.l-=dt;}parts=parts.filter(p=>p.l>0);
  for(const t of trail)t.l-=dt;trail=trail.filter(t=>t.l>0);
- draw();requestAnimationFrame(tick);}
+ try{draw();}catch(e){console.error(e);}requestAnimationFrame(tick);}
 let doneT=0;
-function rr(x,y,w,h,r,col){cx.fillStyle=col;cx.beginPath();cx.roundRect(x,y,w,h,r);cx.fill();}
+function rr(x,y,w,h,r,col){cx.fillStyle=col;cx.beginPath();r=Math.max(0,Math.min(r,w/2,h/2));cx.moveTo(x+r,y);cx.arcTo(x+w,y,x+w,y+h,r);cx.arcTo(x+w,y+h,x,y+h,r);cx.arcTo(x,y+h,x,y,r);cx.arcTo(x,y,x+w,y,r);cx.closePath();cx.fill();}
 function txt(t,x,y,sz,col,al){cx.fillStyle=col||C.text;cx.font=`800 ${sz}px system-ui,sans-serif`;cx.textAlign=al||'center';cx.fillText(t,x,y);}
 function drawWorld(){const L=S.LEVELS[li],p=s.p;const target=p.x-VW*0.35;camX+=(target-camX)*0.12;if(Math.abs(target-camX)>600)camX=target;
  cx.save();cx.translate(-camX,0);
@@ -77,14 +83,14 @@ function drawWorld(){const L=S.LEVELS[li],p=s.p;const target=p.x-VW*0.35;camX+=(
  txt(`Attempt ${attempts}`,20,32,20,C.text,'left');txt(`${L.name}  ${s.t.toFixed(1)}s`,VW/2,50,16);
  rr(VW-62,12,46,40,10,'rgba(29,53,87,.15)');txt('↻',VW-39,42,26);
  if(li===0&&s.t<6&&attempts<3)txt('Hold SPACE / touch to grab • release to launch • ←/→ pump',VW/2,VH-24,18);}
-function button(x,y,w,h,label,i,on){rr(x,y,w,h,14,on?C.player:'#fff');txt(label,x+w/2,y+h/2+8,22,on?'#fff':C.text);menuBoxes.push({x,y,w,h,i});}
+function button(x,y,w,h,label,i,on,ring){if(ring)rr(x-5,y-5,w+10,h+10,18,C.player);rr(x,y,w,h,14,on?C.player:'#fff');txt(label,x+w/2,y+h/2+8,22,on?'#fff':C.text);menuBoxes.push({x,y,w,h,i});}
 function draw(){cx.setTransform(1,0,0,1,0,0);cx.fillStyle=C.sky;cx.fillRect(0,0,cv.width,cv.height);cx.setTransform(scale,0,0,scale,ox,oy);
  cx.save();cx.beginPath();cx.rect(0,0,VW,VH);cx.clip();const gr=cx.createLinearGradient(0,0,0,VH);gr.addColorStop(0,C.sky);gr.addColorStop(1,C.sky2);cx.fillStyle=gr;cx.fillRect(0,0,VW,VH);
  menuBoxes=[];
  if(screen==='title'){txt('SWING',VW/2,170,96,C.player);txt('grab • swing • release',VW/2,215,22);
-  S.LEVELS.forEach((L,i)=>button(VW/2-230+i*240,270,220,90,`${i+1}. ${L.name}`,i,sel===i));
-  S.LEVELS.forEach((L,i)=>{if(best[i])txt(`best ${best[i].toFixed(2)}s`,VW/2-120+i*240,385,16);});
-  txt('Hold SPACE/↑/W or touch = grab   •   let go = launch   •   ←/→ or A/D (or bottom screen halves) = pump   •   R = restart',VW/2,470,15);}
+  button(VW/2-180,245,360,100,`▶  START  (${S.LEVELS[sel].name})`,'start',true);
+  S.LEVELS.forEach((L,i)=>button(VW/2-230+i*240,365,220,64,`${i+1}. ${L.name}`+(best[i]?`  ${best[i].toFixed(1)}s`:''),i,false,sel===i));
+  txt('Hold SPACE/↑/W or touch = grab   •   let go = launch   •   ←/→ or A/D (or bottom screen halves) = pump   •   R = restart',VW/2,490,15);}
  else{drawWorld();if(screen==='done'){cx.fillStyle='rgba(255,255,255,.75)';cx.fillRect(0,0,VW,VH);txt('Level complete!',VW/2,170,56,C.player);
   txt(`Time ${doneT.toFixed(2)}s   •   Attempts ${attempts}`,VW/2,225,24);
   const hasNext=li+1<S.LEVELS.length;button(VW/2-330,280,200,70,hasNext?'Next level':'—',0,sel===0);button(VW/2-100,280,200,70,'Replay',1,sel===1);button(VW/2+130,280,200,70,'Menu',2,sel===2);}}

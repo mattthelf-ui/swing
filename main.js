@@ -52,7 +52,7 @@ function tickInner(now){let dt=Math.min(.05,(now-last)/1000);last=now;if(screen=
   if(s.dead){deathT-=S.DT;if(deathT<=0&&!bot)restart();else if(deathT<=0){bot=null;}continue;}
   if(s.done)break;
   S.step(s,inp);
-  for(const e of s.ev){evT[e]=s.t;if(e==='grab'){blip(660,.08);burst(s.p.x,s.p.y,C.hi,6);}if(e==='release'){blip(440,.1,'triangle');for(let i=0;i<14;i++)parts.push({x:s.p.x-10,y:s.p.y+(Math.random()-.5)*20,vx:-180-Math.random()*160,vy:(Math.random()-.5)*80,l:.38,col:'#ffffff'});}if(e==='land')blip(220,.06);
+  for(const e of s.ev){evT[e]=s.t;if(e==='grab'){blip(660,.08);burst(s.p.x,s.p.y,C.hi,6);}if(e==='release'){blip(440,.1,'triangle');for(let i=0;i<14;i++)parts.push({x:s.p.x-10,y:s.p.y+(Math.random()-.5)*20,vx:-180-Math.random()*160,vy:(Math.random()-.5)*80,l:.38,col:'#ffffff'});}if(e==='land')blip(220,.06);if(e==='combo')blip(520+s.combo*200,.07,'triangle');
    if(e==='die'){blip(110,.3,'sawtooth');burst(s.p.x,s.p.y,C.player,30);deathT=.45;}
    if(e==='done'){blip(880,.15);setTimeout(()=>blip(1320,.25),120);burst(s.p.x,s.p.y,C.hi,50);const t=s.t;if(!best[li]||t<best[li]){best[li]=t;try{localStorage.setItem('swing.best',JSON.stringify(best))}catch(e){}}screen='done';sel=0;doneT=t;}}
   if(prevMode==='air'&&s.p.mode==='ground')evT.land=s.t;prevMode=s.p.mode;if(s.p.mode!=='ground'&&!ART.ok)trail.push({x:s.p.x,y:s.p.y,l:.35});
@@ -87,7 +87,7 @@ function drawWorld(){const L=S.LEVELS[li],p=s.p;const target=p.x-VW*0.35;camX+=(
  cx.restore();drawHUD();}
 function drawHUD(){const L=S.LEVELS[li],p=s.p;
  const prog=Math.min(1,Math.max(0,p.x/L.finish));rr(VW/2-150,16,300,10,5,ART.ok?'rgba(232,241,255,.2)':'rgba(29,53,87,.2)');rr(VW/2-150,16,300*prog,10,5,C.player);
- txt(`Attempt ${attempts}`,20,32,20,C.text,'left');txt(`${L.name}  ${s.t.toFixed(1)}s`,VW/2,50,16);
+ txt(`Attempt ${attempts}`,20,32,20,C.text,'left');if(s.combo>1.001){const pop=Math.max(0,1-(s.t-(evT.combo??-9))*4);txt(`x${s.combo.toFixed(2).replace(/0$/,'')}`,20,66,22+pop*8,s.combo>=S.COMBO_CAP-1e-6?C.hi:C.player,'left');txt('COMBO',20+(s.combo>=1.995?78:70)+pop*8,66,12,C.text,'left');}txt(`${L.name}  ${s.t.toFixed(1)}s`,VW/2,50,16);
  rr(VW-62,12,46,40,10,ART.ok?'rgba(232,241,255,.15)':'rgba(29,53,87,.15)');txt('↻',VW-39,42,26);
  if(li===0&&s.t<6&&attempts<3)txt('Press to grab • let go to launch • ←/→ or bottom corners pump',VW/2,VH-24,18);}
 

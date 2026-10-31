@@ -34,3 +34,12 @@ console.log(n,'checks passed');
 // human-timing: every ground-approach swing point in easy levels has a forgiving release window
 {const win=require('./human.js');for(let li=0;li<S.LEVELS.length;li++){const L=S.LEVELS[li];if(L.diff!=='easy')continue;
  L.hooks.forEach((h,i)=>{const g=L.ground.filter(g=>g[1]<=h.x+50).pop();if(!g||h.x-g[1]>=260)return;const w=win(li,i,true);ok(w>=0.25,`${L.name} point ${i+1}: avg human release window ${w.toFixed(2)}s >= 0.25s`);});}}
+// combo
+{const s=S.create(4);s.p.mode='air';s.p.x=700;s.p.y=330;s.p.vx=400;s.p.vy=0;S.step(s,{grab:true,dir:0});ok(s.p.mode==='swing'&&s.combo===1,'first grab from air (no prior release) keeps combo x1');
+ for(let i=0;i<30;i++)S.step(s,{grab:true,dir:0});const p=s.p,th=p.th,w=p.w,L=p.len;S.step(s,{grab:false,dir:0});ok(Math.abs(s.p.vx-(L*w*Math.cos(th)+S.RELEASE_BOOST)*1)<1,'release at x1 = tangential + boost');
+ s.clean=true;s.last=0;s.p.mode='air';s.p.x=1020-100;s.p.y=330;S.step(s,{grab:true,dir:0});ok(s.p.hook===1&&Math.abs(s.combo-S.COMBO_STEP)<1e-9,`clean swing into next anchor raises combo to x${S.COMBO_STEP}`);
+ for(let i=0;i<30;i++)S.step(s,{grab:true,dir:0});const th2=s.p.th,w2=s.p.w,L2=s.p.len;S.step(s,{grab:false,dir:0});const base=L2*w2*Math.cos(th2)+S.RELEASE_BOOST;ok(base<=0||Math.abs(s.p.vx-base*s.combo)<1,'forward release speed multiplied by combo');
+ s.combo=5;s.clean=true;s.last=-1;s.p.mode='air';s.p.x=1330-100;s.p.y=360;s.p.vx=300;s.p.vy=0;S.step(s,{grab:true,dir:0});ok(s.combo<=S.COMBO_CAP,'combo capped');
+ const g=S.create(0);g.combo=1.5;g.p.mode='air';g.p.x=300;g.p.y=380;g.p.vx=300;g.p.vy=200;for(let i=0;i<30;i++)S.step(g,{grab:false,dir:0});ok(g.p.mode==='ground'&&g.combo===1,'touching ground resets combo');
+ ok(S.create(0).combo===1,'death/restart resets combo');}
+console.log(n,'checks passed (incl. combo)');

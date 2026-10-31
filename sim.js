@@ -25,9 +25,9 @@ function attach(s,i){const p=s.p,q=hookPos(LEVELS[s.li].hooks[i],s.t),dx=p.x-q.x
  p.w=(p.vx*tx+p.vy*ty)/p.len;p.mode='swing';p.hook=i;}
 function release(s){const p=s.p;p.vx=p.len*p.w*Math.cos(p.th);p.vy=-p.len*p.w*Math.sin(p.th);p.mode='air';s.last=p.hook;p.hook=-1;}
 function step(s,inp){if(s.dead||s.done)return s;const L=LEVELS[s.li],p=s.p,ev=[];const t0=s.t;s.t+=DT;
- // toggle: a tap releases if swinging, otherwise requests a grab (buffered BUF seconds)
- if(inp.tap){if(p.mode==='swing'){release(s);ev.push('release');s.buf=0;}else s.buf=BUF;}
- if(p.mode!=='swing'&&s.buf>0){const i=nearest(s);if(i>=0){attach(s,i);ev.push('grab');s.buf=0;}else s.buf-=DT;}
+ // hold to grab: while held and not attached, catch the first reachable point; letting go launches
+ if(p.mode==='swing'&&!inp.grab){release(s);ev.push('release');}
+ if(p.mode!=='swing'&&inp.grab){const i=nearest(s);if(i>=0){attach(s,i);ev.push('grab');}}
  const py=p.y;
  if(p.mode==='swing'){const q=hookPos(L.hooks[p.hook],s.t);let a=-(G/p.len)*Math.sin(p.th);
   if(inp.dir&&Math.sign(inp.dir)===Math.sign(p.w||inp.dir))a+=PUMP*inp.dir;

@@ -3,9 +3,10 @@ const root=path.join(__dirname,'..'),sol=require('./solutions.json'),{A,CH}=requ
 const srv=http.createServer((q,r)=>{const f=path.join(root,q.url.split('?')[0]==='/'?'index.html':q.url.split('?')[0]);fs.readFile(f,(e,d)=>{if(e){r.writeHead(404);return r.end();}r.writeHead(200,{'content-type':f.endsWith('.html')?'text/html':'text/javascript'});r.end(d);});}).listen(0,'127.0.0.1');
 (async()=>{const b=await pup.launch({executablePath:'/usr/bin/google-chrome',args:['--no-sandbox']});const p=await b.newPage();await p.setViewport({width:960,height:540});
 const errs=[];p.on('console',m=>{if(m.type()==='error')errs.push(m.text())});p.on('pageerror',e=>errs.push(String(e)));
-await p.goto(BASE||('http://127.0.0.1:'+srv.address().port+'/'));await new Promise(r=>setTimeout(r,500));await p.screenshot({path:root+'/shots/title.png'});
+await p.goto(BASE||('http://127.0.0.1:'+srv.address().port+'/'));await new Promise(r=>setTimeout(r,500));await p.waitForFunction(()=>window.__swing.art().ok||window.__swing.art().failed.length,{timeout:15000}).catch(()=>{});const art=await p.evaluate(()=>window.__swing.art());
+console.log(art.ok&&!art.failed.length?`PASS all ${art.total} art images loaded (@${art.res}x)`:'FAIL art '+JSON.stringify(art));await new Promise(r=>setTimeout(r,300));await p.screenshot({path:root+'/shots/art-title.png'});
 for(const li of [0,1]){await p.evaluate((li,seq,A,CH)=>window.__swing.playBot(li,seq,A,CH),li,sol[li],A,CH);
- await new Promise(r=>setTimeout(r,2600));await p.screenshot({path:root+`/shots/level${li+1}-swing.png`});
+ await p.waitForFunction(()=>window.__swing.state.p.mode==='swing'&&window.__swing.state.t>1.6,{timeout:15000});await new Promise(r=>setTimeout(r,120));await p.screenshot({path:root+`/shots/art-level${li+1}.png`});
  await p.waitForFunction(()=>window.__swing.screen==='done',{timeout:20000});await new Promise(r=>setTimeout(r,400));
  await p.screenshot({path:root+`/shots/level${li+1}-complete.png`});console.log('PASS level',li+1,'bot completed in browser');}
 // death + restart via real keys

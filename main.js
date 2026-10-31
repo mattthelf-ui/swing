@@ -13,20 +13,23 @@ let ac=null;function blip(f,d,type){try{ac=ac||new AudioContext();const o=ac.cre
 function start(i){for(const k in evT)delete evT[k];prevMode='ground';bot=null;tapQ=false;li=i;s=S.create(i);screen='play';camX=0;parts=[];trail=[];}
 function restart(){attempts++;start(li);}
 function burst(x,y,col,n){for(let i=0;i<n;i++){const a=Math.random()*6.28,v=60+Math.random()*260;parts.push({x,y,vx:Math.cos(a)*v,vy:Math.sin(a)*v-80,l:.6,col});}}
-function menuAct(){if(screen==='title'){attempts=1;start(sel);}else if(screen==='done'){if(sel===0&&li+1<S.LEVELS.length){attempts=1;start(li+1);}else if(sel===1){attempts=1;start(li);}else{screen='title';sel=Math.min(li+1,S.LEVELS.length-1);}}}
+const firstOpen=()=>{const i=S.LEVELS.findIndex((_,i)=>!best[i]);return i<0?0:i;};
+function menuAct(){if(screen==='title'){attempts=1;start(firstOpen());}else if(screen==='levels'){attempts=1;start(sel);}else if(screen==='done'){if(sel===0&&li+1<S.LEVELS.length){attempts=1;start(li+1);}else if(sel===1){attempts=1;start(li);}else{screen='title';sel=Math.min(li+1,S.LEVELS.length-1);}}}
+function openLevels(){screen='levels';sel=firstOpen();}
 addEventListener('keydown',e=>{const k=e.code;if(keys[k])return;keys[k]=true;
  if(['Space','ArrowUp','ArrowDown','ArrowLeft','ArrowRight'].includes(k))e.preventDefault();
- if(screen!=='play'){const n=screen==='title'?S.LEVELS.length:3;
+ if(screen!=='play'){if(screen==='title'){if(k==='KeyL')openLevels();else if(k==='Enter'||k==='Space')menuAct();return;}const n=screen==='levels'?S.LEVELS.length:3;
   if(k==='ArrowLeft'||k==='KeyA')sel=(sel+n-1)%n;if(k==='ArrowRight'||k==='KeyD')sel=(sel+1)%n;
-  const st=screen==='title'?4:1;if(k==='ArrowUp'||k==='KeyW')sel=(sel+n-st)%n;if(k==='ArrowDown'||k==='KeyS')sel=(sel+st)%n;
-  if(k==='Enter'||k==='Space')menuAct();if(k==='Escape')screen='title';return;}
+  const st=screen==='levels'?4:1;if(k==='ArrowUp'||k==='KeyW')sel=(sel+n-st)%n;if(k==='ArrowDown'||k==='KeyS')sel=(sel+st)%n;
+  if(k==='Enter'||k==='Space')menuAct();if(k==='Escape'||k==='Backspace')screen='title';return;}
  if(k==='KeyR'){restart();}if((k==='Space'||k==='ArrowUp'||k==='KeyW')&&!e.repeat)tapQ=true;if(k==='Escape'){screen='title';sel=li;}});
 addEventListener('keyup',e=>{keys[e.code]=false;});
 function tpos(t){const r=cv.getBoundingClientRect(),d=devicePixelRatio||1;return {x:((t.clientX-r.left)*d-ox)/scale,y:((t.clientY-r.top)*d-oy)/scale};}
 let menuBoxes=[];
 function onDown(pt){if(screen!=='play'){let hit=null;const P=18;for(const b of menuBoxes)if(pt.x>b.x-P&&pt.x<b.x+b.w+P&&pt.y>b.y-P&&pt.y<b.y+b.h+P){hit=b;break;}
+  if(hit&&hit.i==='levels'){openLevels();return;}if(hit&&hit.i==='back'){screen='title';return;}
   if(hit){if(hit.i!=='start')sel=hit.i;}else if(screen!=='title')return;
-  if(screen==='title'){attempts=1;start(sel);}else menuAct();return;}
+  menuAct();return;}
  if(pt.x>VW-70&&pt.y<60){restart();return;}if(!inPump(pt))tapQ=true;}
 const isG=pt=>screen==='play'&&!inPump(pt)&&!(pt.x>VW-70&&pt.y<60);
 cv.addEventListener('pointerdown',e=>{e.preventDefault();try{cv.setPointerCapture(e.pointerId)}catch(_){}const pt=tpos(e);pt.g=isG(pt);onDown(pt);ptrs[e.pointerId]=pt;updDir();});
@@ -141,15 +144,18 @@ function button(x,y,w,h,label,i,on,ring){if(ring)rr(x-5,y-5,w+10,h+10,18,C.playe
 function draw(){cx.setTransform(1,0,0,1,0,0);cx.fillStyle=C.sky;cx.fillRect(0,0,cv.width,cv.height);cx.setTransform(scale,0,0,scale,ox,oy);
  cx.save();cx.beginPath();cx.rect(0,0,VW,VH);cx.clip();const gr=cx.createLinearGradient(0,0,0,VH);gr.addColorStop(0,C.sky);gr.addColorStop(1,C.sky2);C=ART.ok?CN:C0;if(ART.ok)drawBG(screen==='title'?performance.now()/30:camX);else{cx.fillStyle=gr;cx.fillRect(0,0,VW,VH);}
  menuBoxes=[];
- if(screen==='title'){if(ART.ok)drawBot('idle_0'+(Math.floor(performance.now()/180)%4),VW/2+330,150,0,0.8,false);txt('SWING',VW/2-130,92,72,C.player);txt('grab • swing • release',VW/2-130,124,18);
-  button(VW/2+20,40,250,80,`▶ START`,'start',true);txt(`${sel+1}. ${S.LEVELS[sel].name}`,VW/2+145,140,16,C.text);
-  const DC={easy:'#3ec46d',normal:'#2FE0FF',hard:'#ff4d6d'},done=Object.keys(best).length;
-  S.LEVELS.forEach((L,i)=>{const c=i%4,rw=(i/4)|0,x=VW/2-430+c*218,y=160+rw*92,w=206,h=80,on=sel===i;
+ const HELP='Press SPACE/↑/W or screen to grab   •   let go to launch   •   ←/→, A/D or bottom corners = pump   •   R = restart';
+ if(screen==='title'){const fo=firstOpen(),done=Object.keys(best).length;if(ART.ok)drawBot('idle_0'+(Math.floor(performance.now()/180)%4),VW/2+290,250,0,1.1,false);
+  txt('SWING',VW/2,140,110,C.player);txt('grab • swing • release',VW/2,180,22);
+  button(VW/2-190,220,380,100,'▶  START','start',true);txt(`${fo+1}. ${S.LEVELS[fo].name}  •  ${done}/${S.LEVELS.length} cleared`,VW/2,350,17,C.text);
+  button(VW/2-110,380,220,60,'LEVELS','levels',false);txt(HELP,VW/2,510,14);}
+ else if(screen==='levels'){const DC={easy:'#3ec46d',normal:'#2FE0FF',hard:'#ff4d6d'},done=Object.keys(best).length;
+  button(20,18,140,56,'◀ Back','back',false);txt('LEVELS',VW/2,62,44,C.player);txt(`${done}/${S.LEVELS.length} cleared`,VW-30,58,18,'#3ec46d','right');
+  S.LEVELS.forEach((L,i)=>{const c=i%4,rw=(i/4)|0,x=VW/2-430+c*218,y=110+rw*100,w=206,h=86,on=sel===i;
    if(on)rr(x-4,y-4,w+8,h+8,16,C.player);rr(x,y,w,h,12,C.btn||'#fff');rr(x,y,8,h,4,DC[L.diff]||'#888');
-   txt(`${i+1}. ${L.name}`,x+18,y+32,19,C.text,'left');txt(L.diff.toUpperCase(),x+18,y+60,13,DC[L.diff],'left');
-   if(best[i]){txt('✓ '+best[i].toFixed(1)+'s',x+w-12,y+60,14,'#3ec46d','right');}menuBoxes.push({x,y,w,h,i});});
-  txt(`${done}/${S.LEVELS.length} cleared`,VW/2-130,146,14,"#3ec46d");
-  txt('Press SPACE/↑/W or screen to grab   •   let go to launch   •   ←/→, A/D or bottom corners = pump   •   R = restart',VW/2,522,14);}
+   txt(`${i+1}. ${L.name}`,x+18,y+34,19,C.text,'left');txt(L.diff.toUpperCase(),x+18,y+64,13,DC[L.diff],'left');
+   if(best[i]){txt('✓ '+best[i].toFixed(1)+'s',x+w-12,y+64,14,'#3ec46d','right');}menuBoxes.push({x,y,w,h,i});});
+  txt('Tap a level to play  •  ←↑→↓ + Enter  •  Esc = back',VW/2,510,15);}
  else{if(ART.ok)drawWorldArt();else drawWorld();if(screen==='done'){cx.fillStyle=ART.ok?'rgba(10,14,28,.72)':'rgba(255,255,255,.75)';cx.fillRect(0,0,VW,VH);txt('Level complete!',VW/2,170,56,C.player);if(ART.ok)drawBot('idle_0'+(Math.floor(performance.now()/180)%4),VW/2,470,0,0.9,false);
   txt(`Time ${doneT.toFixed(2)}s   •   Attempts ${attempts}`,VW/2,225,24);
   const hasNext=li+1<S.LEVELS.length;button(VW/2-330,280,200,70,hasNext?'Next level':'—',0,sel===0);button(VW/2-100,280,200,70,'Replay',1,sel===1);button(VW/2+130,280,200,70,'Menu',2,sel===2);}}

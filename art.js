@@ -11,5 +11,5 @@ for(const k of ['ring_magnet','pad_anchor']){LIST.anchors.push(k+'_idle');for(le
 const A={ok:false,failed:0,loaded:0,total:0,img:{},hands:HANDS,anim,failedList:[]};
 A.load=function(scaleHint){const k=scaleHint>=2.2?3:scaleHint>=1.3?2:1,suf=k===1?'':'@'+k+'x';A.res=k;
  for(const d in LIST)for(const n of LIST[d]){A.total++;const im=new Image();im.onload=()=>{A.loaded++;if(A.loaded===A.total&&!A.failed)A.ok=true;};
-  im.onerror=()=>{A.failed++;A.failedList.push(d+'/'+n);};im.src=`art/${d}/${n}${suf}.png?v=ec4f18a`;A.img[n]=im;}};
+  im.onerror=()=>{A.failed++;A.failedList.push(d+'/'+n);};im.src=`art/${d}/${n}${suf}.png?v=2b9b3e8`;A.img[n]=im;}};
 window.SwingArt=A;})();

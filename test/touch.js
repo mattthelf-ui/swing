@@ -8,12 +8,12 @@ for(const noRR of [false,true])for(const [w,h,d,mob] of [[960,540,1,false],[844,
  const p=await b.newPage();const errs=[];p.on('pageerror',e=>errs.push(String(e)));p.on('console',m=>{if(m.type()==='error')errs.push(m.text())});
  if(noRR)await p.evaluateOnNewDocument(()=>{delete CanvasRenderingContext2D.prototype.roundRect;});
  await p.setViewport({width:w,height:h,deviceScaleFactor:d,isMobile:mob,hasTouch:mob||mode==='touch'});
- await p.goto(URL+'?nc='+Date.now(),{waitUntil:'networkidle0'});await new Promise(r=>setTimeout(r,400));
- const r=[];await tap(p,mode,480,295,w,h);r.push(await p.evaluate(()=>window.__swing.screen+':'+window.__swing.state.li));// START
+ await p.goto(URL+'?nc='+Date.now(),{waitUntil:'load',timeout:60000});await new Promise(r=>setTimeout(r,400));
+ await p.waitForFunction(()=>window.__swing.art().ok||window.__swing.art().failed.length,{timeout:30000}).catch(()=>{});const art=await p.evaluate(()=>window.__swing.art());if(!art.ok||art.failed.length)errs.push('art '+JSON.stringify(art.failed)+' res'+art.res);const r=[];await tap(p,mode,480,295,w,h);r.push(await p.evaluate(()=>window.__swing.screen+':'+window.__swing.state.li));// START
  await p.evaluate(()=>{window.__swing.state.done=true;window.__swing.setScreen('done')});await new Promise(r=>setTimeout(r,100));await tap(p,mode,480+30,315,w,h);r.push(await p.evaluate(()=>window.__swing.screen));// replay
  await p.evaluate(()=>window.__swing.setScreen('done'));await new Promise(r=>setTimeout(r,100));await tap(p,mode,480+230,315,w,h);r.push(await p.evaluate(()=>window.__swing.screen));// menu
  await tap(p,mode,480+120,397,w,h);r.push(await p.evaluate(()=>window.__swing.screen+':'+window.__swing.state.li));// level 2 card
  await p.evaluate(()=>window.__swing.setScreen('title'));await tap(p,mode,120,120,w,h);r.push(await p.evaluate(()=>window.__swing.screen));// tap anywhere
  const ok=r.join()===['play:0','play','title','play:1','play'].join()&&!errs.length;if(!ok)fails++;
- console.log(ok?'PASS':'FAIL',`${noRR?'no-roundRect ':''}${w}x${h}@${d} ${mode}:`,r.join(' '),errs.join('|'));await p.close();}
+ console.log(ok?'PASS':'FAIL',`art@${art.res}x `+`${noRR?'no-roundRect ':''}${w}x${h}@${d} ${mode}:`,r.join(' '),errs.join('|'));await p.close();}
 await b.close();srv&&srv.close();console.log(fails?fails+' FAILED':'ALL PASS');})();

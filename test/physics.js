@@ -1,4 +1,4 @@
-const S=require('../sim.js');const assert=require('assert');let n=0;const ok=(c,m)=>{assert(c,m);n++;console.log('PASS',m);};
+const S=require('../sim.js');const H0=S.LEVELS[0].hooks[0],H0s={...H0};H0.x=830;H0.y=270;const assert=require('assert');let n=0;const ok=(c,m)=>{assert(c,m);n++;console.log('PASS',m);};
 // energy conservation: hang on hook, no pump
 {const s=S.create(0);s.p.mode='air';s.p.x=830-120;s.p.y=270+60;s.p.vx=0;s.p.vy=0;S.attach(s,0);const p=s.p;
  const E=()=>{const v=p.len*p.w;return .5*v*v+S.G*(270-p.y+p.len);};const E0=E();let mx=0;
@@ -20,6 +20,7 @@ const S=require('../sim.js');const assert=require('assert');let n=0;const ok=(c,
 {const s=S.create(0);let i=0;while(!s.dead&&i<2000){S.step(s,{grab:false,dir:0});i++;}ok(s.dead,'running into first pit kills the player');const r=S.create(0);ok(!r.dead&&r.p.x===60&&r.t===0,'restart gives fresh state');}
 // spike death
 {const s=S.create(0);s.p.x=2200;s.p.y=420-14;S.step(s,{grab:false,dir:0});let i=0;while(!s.dead&&i<200){S.step(s,{grab:false,dir:0});i++;}ok(s.dead&&s.p.x<2260,'spikes kill');}
+Object.assign(H0,H0s);
 // solver: both levels completable
 {const {solve,A,CH}=require('./solve.js');const sol={};for(let li=0;li<S.LEVELS.length;li++){const q=solve(li);ok(!!q,`level ${li+1} completable by search bot`);
  const s=S.create(li);let k=0;while(!s.done&&!s.dead&&k<q.length*CH+10){S.step(s,A[q[Math.floor(k/CH)]]||A[0]);k++;}ok(s.done,`level ${li+1} replay of solution reaches flag (${s.t.toFixed(1)}s)`);
@@ -30,3 +31,6 @@ const S=require('../sim.js');const assert=require('assert');let n=0;const ok=(c,
 {const s=S.create(0);while(s.p.x<700)S.step(s,{grab:false,dir:0});S.step(s,{grab:true,dir:0});for(let i=0;i<30;i++)S.step(s,{grab:true,dir:0});ok(s.p.mode==='swing','press while running grabs; holding keeps swinging (ground clearance)');S.step(s,{grab:false,dir:0});ok(s.p.mode==='air','letting go launches');}
 {const s=S.create(0);s.p.mode='air';s.p.x=300;s.p.y=300;s.p.vx=330;s.p.vy=0;S.step(s,{grab:false,dir:0});ok(s.p.mode==='air','letting go while not attached does nothing');}
 console.log(n,'checks passed');
+// human-timing: every ground-approach swing point in easy levels has a forgiving release window
+{const win=require('./human.js');for(let li=0;li<S.LEVELS.length;li++){const L=S.LEVELS[li];if(L.diff!=='easy')continue;
+ L.hooks.forEach((h,i)=>{const g=L.ground.filter(g=>g[1]<=h.x+50).pop();if(!g||h.x-g[1]>=260)return;const w=win(li,i,true);ok(w>=0.25,`${L.name} point ${i+1}: avg human release window ${w.toFixed(2)}s >= 0.25s`);});}}

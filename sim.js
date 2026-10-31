@@ -2,14 +2,14 @@
 (function(root){
 const G=1500, RUN=330, R=14, GRAB_R=200, PUMP=2.5, VMAX=900, DT=1/120, RELEASE_BOOST=200, BUF=0.15;
 const LEVELS=[
- {name:"Warm-up",diff:"easy",finish:3350,groundY:420,ground:[[0, 700], [1050, 1500], [1860, 2650], [3050, 3500]],spikes:[[2250, 2330]],plats:[],
-  hooks:[{x:830,y:270,k:'hook'},{x:1650,y:270,k:'bar'},{x:2290,y:270,k:'vine'},{x:2800,y:280,k:'hook'}]},
- {name:"Scrap Steps",diff:"easy",finish:3250,groundY:420,ground:[[0, 700], [1050, 1600], [1950, 2600], [2950, 3400]],spikes:[],plats:[],
-  hooks:[{x:830,y:270,k:'hook'},{x:1780,y:270,k:'bar'},{x:2780,y:270,k:'hook'}]},
- {name:"Crane Hop",diff:"easy",finish:3150,groundY:420,ground:[[0, 650], [1000, 1400], [1750, 2300], [2700, 3300]],spikes:[[2000, 2080]],plats:[],
-  hooks:[{x:790,y:270,k:'hook'},{x:1580,y:270,k:'bar'},{x:2040,y:270,k:'vine'},{x:2520,y:270,k:'hook'}]},
- {name:"Moonlit Yard",diff:"easy",finish:3150,groundY:420,ground:[[0, 600], [950, 1300], [2000, 2500], [2900, 3300]],spikes:[[2200, 2280]],plats:[],
-  hooks:[{x:740,y:270,k:'hook'},{x:1450,y:250,k:'bar'},{x:1750,y:250,k:'hook'},{x:2240,y:270,k:'vine'},{x:2700,y:270,k:'hook'}]},
+ {name:"Warm-up",diff:"easy",finish:3350,groundY:420,ground:[[0, 700], [950, 1500], [1860, 2650], [2950, 3500]],spikes:[[2250, 2330]],plats:[],
+  hooks:[{x:830,y:240,k:'hook'},{x:1680,y:270,k:'bar'},{x:2290,y:270,k:'vine'},{x:2800,y:255,k:'hook'}]},
+ {name:"Scrap Steps",diff:"easy",finish:3250,groundY:420,ground:[[0, 700], [950, 1600], [1950, 2600], [2950, 3400]],spikes:[],plats:[],
+  hooks:[{x:830,y:240,k:'hook'},{x:1780,y:270,k:'bar'},{x:2780,y:270,k:'hook'}]},
+ {name:"Crane Hop",diff:"easy",finish:3150,groundY:420,ground:[[0, 650], [950, 1400], [1750, 2300], [2600, 3300]],spikes:[[2000, 2080]],plats:[],
+  hooks:[{x:790,y:255,k:'hook'},{x:1580,y:270,k:'bar'},{x:2040,y:270,k:'vine'},{x:2460,y:255,k:'hook'}]},
+ {name:"Moonlit Yard",diff:"easy",finish:3150,groundY:420,ground:[[0, 600], [900, 1300], [2000, 2500], [2850, 3300]],spikes:[[2200, 2280]],plats:[],
+  hooks:[{x:740,y:255,k:'hook'},{x:1420,y:255,k:'bar'},{x:1700,y:265,k:'hook'},{x:2240,y:270,k:'vine'},{x:2670,y:270,k:'hook'}]},
  {name:"Chain",diff:"normal",finish:4300,groundY:420,ground:[[0, 600], [3950, 4500]],spikes:[[3990, 4070]],plats:[{x:2550,y:400,w:180,dx:140,per:3}],
   hooks:[{x:720,y:260,k:'hook'},{x:1020,y:230,k:'bar'},{x:1330,y:270,k:'vine'},{x:1650,y:240,k:'hook',mx:0,my:40,per:2.4},{x:1980,y:240,k:'bar'},{x:2300,y:220,k:'vine'},{x:3000,y:240,k:'hook'},{x:3330,y:220,k:'bar'},{x:3680,y:250,k:'vine'}]},
  {name:"Girder Run",diff:"normal",finish:3800,groundY:420,ground:[[0, 600], [2300, 2700], [3500, 3900]],spikes:[[2450, 2530]],plats:[],
@@ -36,7 +36,7 @@ function create(li){const L=LEVELS[li];return {li,t:0,dead:false,done:false,buf:
 function nearest(s){const L=LEVELS[s.li],p=s.p;let best=-1,bd=GRAB_R;
  L.hooks.forEach((h,i)=>{if(i===s.last&&p.mode==='air')return;const q=hookPos(h,s.t),d=Math.hypot(q.x-p.x,q.y-p.y);if(d<bd&&q.y<p.y){bd=d;best=i;}});return best;}
 function attach(s,i){const p=s.p,q=hookPos(LEVELS[s.li].hooks[i],s.t),dx=p.x-q.x,dy=p.y-q.y;
- p.len=Math.hypot(dx,dy);p.th=Math.atan2(dx,dy);if(p.mode==='ground'){const mx=LEVELS[s.li].groundY-R-q.y-34;if(p.len>mx){p.len=Math.max(50,mx);p.x=q.x+p.len*Math.sin(p.th);p.y=q.y+p.len*Math.cos(p.th);}}const tx=Math.cos(p.th),ty=-Math.sin(p.th);
+ p.len=Math.hypot(dx,dy);p.th=Math.atan2(dx,dy);if(p.mode==='ground'&&LEVELS[s.li].ground.some(g=>q.x>g[0]-20&&q.x<g[1]+20)){const mx=LEVELS[s.li].groundY-R-q.y-34;if(p.len>mx){p.len=Math.max(50,mx);p.x=q.x+p.len*Math.sin(p.th);p.y=q.y+p.len*Math.cos(p.th);}}const tx=Math.cos(p.th),ty=-Math.sin(p.th);
  p.w=(p.vx*tx+p.vy*ty)/p.len;p.mode='swing';p.hook=i;}
 function release(s){const p=s.p;p.vx=p.len*p.w*Math.cos(p.th);p.vy=-p.len*p.w*Math.sin(p.th);p.vx+=RELEASE_BOOST;p.mode='air';s.last=p.hook;p.hook=-1;}
 function step(s,inp){if(s.dead||s.done)return s;const L=LEVELS[s.li],p=s.p,ev=[];const t0=s.t;s.t+=DT;

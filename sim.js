@@ -1,11 +1,11 @@
 // Swing — pure simulation (shared by game + tests)
 (function(root){
-const G=1500, RUN=330, R=14, GRAB_R=200, PUMP=2.5, VMAX=900, DT=1/120;
+const G=1500, RUN=330, R=14, GRAB_R=200, PUMP=2.5, VMAX=900, DT=1/120, BUF=0.15;
 const LEVELS=[
  {name:"Warm-up", finish:3350,
-  ground:[[0,700],[1050,1500],[1950,2650],[3050,3500]], groundY:420,
+  ground:[[0,700],[1050,1500],[1860,2650],[3050,3500]], groundY:420,
   spikes:[[2250,2330]], plats:[],
-  hooks:[{x:830,y:270,k:'hook'},{x:1640,y:280,k:'bar'},{x:2290,y:270,k:'vine'},{x:2800,y:280,k:'hook'}]},
+  hooks:[{x:830,y:270,k:'hook'},{x:1650,y:270,k:'bar'},{x:2290,y:270,k:'vine'},{x:2800,y:280,k:'hook'}]},
  {name:"Chain", finish:4300,
   ground:[[0,600],[3950,4500]], groundY:420,
   spikes:[[3950,4030]], plats:[{x:2550,y:400,w:180,dx:140,per:3}],
@@ -16,18 +16,18 @@ function hookPos(h,t){const p=h.per||1,s=Math.sin(2*Math.PI*t/p);return {x:h.x+(
 function platX(p,t){return p.x+p.dx*Math.sin(2*Math.PI*t/p.per);}
 function solids(L,t){const a=L.ground.map(g=>({x1:g[0],x2:g[1],y:L.groundY,plat:null}));
  for(const p of L.plats){const x=platX(p,t);a.push({x1:x,x2:x+p.w,y:p.y,plat:p,h:16});}return a;}
-function create(li){const L=LEVELS[li];return {li,t:0,dead:false,done:false,grabPrev:false,last:-1,
+function create(li){const L=LEVELS[li];return {li,t:0,dead:false,done:false,buf:0,last:-1,
  p:{x:60,y:L.groundY-R,vx:RUN,vy:0,mode:'ground',hook:-1,len:0,th:0,w:0}};}
 function nearest(s){const L=LEVELS[s.li],p=s.p;let best=-1,bd=GRAB_R;
  L.hooks.forEach((h,i)=>{if(i===s.last&&p.mode==='air')return;const q=hookPos(h,s.t),d=Math.hypot(q.x-p.x,q.y-p.y);if(d<bd&&q.y<p.y){bd=d;best=i;}});return best;}
 function attach(s,i){const p=s.p,q=hookPos(LEVELS[s.li].hooks[i],s.t),dx=p.x-q.x,dy=p.y-q.y;
- p.len=Math.hypot(dx,dy);p.th=Math.atan2(dx,dy);const tx=Math.cos(p.th),ty=-Math.sin(p.th);
+ p.len=Math.hypot(dx,dy);p.th=Math.atan2(dx,dy);if(p.mode==='ground'){const mx=LEVELS[s.li].groundY-R-q.y-6;if(p.len>mx){p.len=Math.max(50,mx);p.x=q.x+p.len*Math.sin(p.th);p.y=q.y+p.len*Math.cos(p.th);}}const tx=Math.cos(p.th),ty=-Math.sin(p.th);
  p.w=(p.vx*tx+p.vy*ty)/p.len;p.mode='swing';p.hook=i;}
 function release(s){const p=s.p;p.vx=p.len*p.w*Math.cos(p.th);p.vy=-p.len*p.w*Math.sin(p.th);p.mode='air';s.last=p.hook;p.hook=-1;}
 function step(s,inp){if(s.dead||s.done)return s;const L=LEVELS[s.li],p=s.p,ev=[];const t0=s.t;s.t+=DT;
- const press=inp.grab&&!s.grabPrev;s.grabPrev=inp.grab;
- if(p.mode==='swing'&&!inp.grab){release(s);ev.push('release');}
- if(p.mode!=='swing'&&inp.grab&&(press||p.mode==='air')){const i=nearest(s);if(i>=0){attach(s,i);ev.push('grab');}}
+ // toggle: a tap releases if swinging, otherwise requests a grab (buffered BUF seconds)
+ if(inp.tap){if(p.mode==='swing'){release(s);ev.push('release');s.buf=0;}else s.buf=BUF;}
+ if(p.mode!=='swing'&&s.buf>0){const i=nearest(s);if(i>=0){attach(s,i);ev.push('grab');s.buf=0;}else s.buf-=DT;}
  const py=p.y;
  if(p.mode==='swing'){const q=hookPos(L.hooks[p.hook],s.t);let a=-(G/p.len)*Math.sin(p.th);
   if(inp.dir&&Math.sign(inp.dir)===Math.sign(p.w||inp.dir))a+=PUMP*inp.dir;
@@ -44,6 +44,6 @@ function step(s,inp){if(s.dead||s.done)return s;const L=LEVELS[s.li],p=s.p,ev=[]
  if(p.y>900){s.dead=true;ev.push('die');}
  if(!s.dead&&p.x>=L.finish){s.done=true;ev.push('done');}
  s.ev=ev;return s;}
-const api={G,RUN,R,GRAB_R,DT,LEVELS,create,step,nearest,hookPos,platX,solids,release,attach};
+const api={BUF,G,RUN,R,GRAB_R,DT,LEVELS,create,step,nearest,hookPos,platX,solids,release,attach};
 if(typeof module!=='undefined')module.exports=api;else root.SwingSim=api;
 })(this);

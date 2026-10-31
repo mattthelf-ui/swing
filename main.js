@@ -5,9 +5,10 @@ function resize(){const d=devicePixelRatio||1;cv.width=innerWidth*d;cv.height=in
 addEventListener('resize',resize);resize();
 const C={sky:'#8fd3ff',sky2:'#c8ecff',ground:'#3ec46d',dirt:'#8a5a3c',spike:'#ff4d6d',plat:'#ffb703',hook:'#264653',rope:'#264653',player:'#ff6b35',hi:'#ffd60a',flag:'#e63946',text:'#1d3557'};
 let screen='title',li=0,s=null,attempts=1,camX=0,parts=[],trail=[],best={},sel=0,deathT=0,bot=null,botI=0;
-const keys={},inp={grab:false,dir:0};let touchGrab=false,touchDir=0;
+const keys={};const inPump=p=>p.y>VH*0.6&&(p.x<VW*0.25||p.x>VW*0.75);
+const inp={tap:false,dir:0};let tapQ=false,touchDir=0;
 let ac=null;function blip(f,d,type){try{ac=ac||new AudioContext();const o=ac.createOscillator(),g=ac.createGain();o.type=type||'square';o.frequency.value=f;g.gain.value=.06;g.gain.exponentialRampToValueAtTime(.001,ac.currentTime+d);o.connect(g).connect(ac.destination);o.start();o.stop(ac.currentTime+d);}catch(e){}}
-function start(i){bot=null;li=i;s=S.create(i);screen='play';camX=0;parts=[];trail=[];}
+function start(i){bot=null;tapQ=false;li=i;s=S.create(i);screen='play';camX=0;parts=[];trail=[];}
 function restart(){attempts++;start(li);}
 function burst(x,y,col,n){for(let i=0;i<n;i++){const a=Math.random()*6.28,v=60+Math.random()*260;parts.push({x,y,vx:Math.cos(a)*v,vy:Math.sin(a)*v-80,l:.6,col});}}
 function menuAct(){if(screen==='title'){attempts=1;start(sel);}else if(screen==='done'){if(sel===0&&li+1<S.LEVELS.length){attempts=1;start(li+1);}else if(sel===1){attempts=1;start(li);}else{screen='title';sel=0;}}}
@@ -17,31 +18,31 @@ addEventListener('keydown',e=>{const k=e.code;if(keys[k])return;keys[k]=true;
   if(k==='ArrowLeft'||k==='KeyA'||k==='ArrowUp'||k==='KeyW')sel=(sel+n-1)%n;
   if(k==='ArrowRight'||k==='KeyD'||k==='ArrowDown'||k==='KeyS')sel=(sel+1)%n;
   if(k==='Enter'||k==='Space')menuAct();if(k==='Escape')screen='title';return;}
- if(k==='KeyR'){restart();}if(k==='Escape'){screen='title';sel=li;}});
+ if(k==='KeyR'){restart();}if((k==='Space'||k==='ArrowUp'||k==='KeyW')&&!e.repeat)tapQ=true;if(k==='Escape'){screen='title';sel=li;}});
 addEventListener('keyup',e=>{keys[e.code]=false;});
 function tpos(t){const r=cv.getBoundingClientRect(),d=devicePixelRatio||1;return {x:((t.clientX-r.left)*d-ox)/scale,y:((t.clientY-r.top)*d-oy)/scale};}
 let menuBoxes=[];
 function onDown(pt){if(screen!=='play'){let hit=null;const P=18;for(const b of menuBoxes)if(pt.x>b.x-P&&pt.x<b.x+b.w+P&&pt.y>b.y-P&&pt.y<b.y+b.h+P){hit=b;break;}
   if(hit){if(hit.i!=='start')sel=hit.i;}else if(screen!=='title')return;
   if(screen==='title'){attempts=1;start(sel);}else menuAct();return;}
- if(pt.x>VW-70&&pt.y<60){restart();return;}touchGrab=true;}
+ if(pt.x>VW-70&&pt.y<60){restart();return;}if(!inPump(pt))tapQ=true;}
 cv.addEventListener('pointerdown',e=>{e.preventDefault();onDown(tpos(e));ptrs[e.pointerId]=tpos(e);updDir();});
 cv.addEventListener('pointermove',e=>{if(ptrs[e.pointerId]){ptrs[e.pointerId]=tpos(e);updDir();}});
 const ptrs={};
 if(!window.PointerEvent){cv.addEventListener('touchstart',e=>{e.preventDefault();for(const t of e.changedTouches){onDown(tpos(t));ptrs[t.identifier]=tpos(t);}updDir();},{passive:false});
- const te=e=>{for(const t of e.changedTouches)delete ptrs[t.identifier];if(!Object.keys(ptrs).length)touchGrab=false;updDir();};cv.addEventListener('touchend',te);cv.addEventListener('touchcancel',te);
- cv.addEventListener('mousedown',e=>{onDown(tpos(e));});addEventListener('mouseup',()=>{if(!Object.keys(ptrs).length)touchGrab=false;});}function up(e){delete ptrs[e.pointerId];if(!Object.keys(ptrs).length)touchGrab=false;updDir();}
+ const te=e=>{for(const t of e.changedTouches)delete ptrs[t.identifier];updDir();};cv.addEventListener('touchend',te);cv.addEventListener('touchcancel',te);
+ cv.addEventListener('mousedown',e=>{onDown(tpos(e));});addEventListener('mouseup',()=>{});}function up(e){delete ptrs[e.pointerId];updDir();}
 cv.addEventListener('pointerup',up);cv.addEventListener('pointercancel',up);
-function updDir(){touchDir=0;for(const k in ptrs){const p=ptrs[k];if(p.y>VH*0.55)touchDir=p.x<VW/2?-1:1;}}
+function updDir(){touchDir=0;for(const k in ptrs){const p=ptrs[k];if(inPump(p))touchDir=p.x<VW/2?-1:1;}}
 // test hooks
 const q=new URLSearchParams(location.search);
-window.__swing={boxes:()=>menuBoxes,start,get state(){return s},get screen(){return screen},playBot(i,seq,A,CH){attempts=1;start(i);bot={seq,A,CH};botI=0;},setScreen(x){screen=x}};
+window.__swing={boxes:()=>menuBoxes,start,get state(){return s},get screen(){return screen},playBot(i,seq,A,CH){attempts=1;start(i);bot={seq,A,CH};botI=0;},tap(){tapQ=true;},setScreen(x){screen=x}};
 let acc=0,last=performance.now();
 function tick(now){try{tickInner(now);}catch(e){console.error(e);requestAnimationFrame(tick);}}
 function tickInner(now){let dt=Math.min(.05,(now-last)/1000);last=now;if(screen==='play'){acc+=dt;
  while(acc>=S.DT){acc-=S.DT;
-  if(bot){const a=bot.A[bot.seq[Math.floor(botI/bot.CH)]]||{grab:false,dir:0};botI++;inp.grab=a.grab;inp.dir=a.dir;}
-  else{inp.grab=!!(keys.Space||keys.ArrowUp||keys.KeyW||touchGrab);inp.dir=(keys.ArrowRight||keys.KeyD?1:0)-(keys.ArrowLeft||keys.KeyA?1:0)||touchDir;}
+  if(bot){const a=bot.A[bot.seq[Math.floor(botI/bot.CH)]]||{tap:false,dir:0};inp.tap=a.tap&&botI%bot.CH===0;botI++;inp.dir=a.dir;}
+  else{inp.tap=tapQ;tapQ=false;inp.dir=(keys.ArrowRight||keys.KeyD?1:0)-(keys.ArrowLeft||keys.KeyA?1:0)||touchDir;}
   if(s.dead){deathT-=S.DT;if(deathT<=0&&!bot)restart();else if(deathT<=0){bot=null;}continue;}
   if(s.done)break;
   S.step(s,inp);
@@ -82,7 +83,7 @@ function drawWorld(){const L=S.LEVELS[li],p=s.p;const target=p.x-VW*0.35;camX+=(
  const prog=Math.min(1,Math.max(0,p.x/L.finish));rr(VW/2-150,16,300,10,5,'rgba(29,53,87,.2)');rr(VW/2-150,16,300*prog,10,5,C.player);
  txt(`Attempt ${attempts}`,20,32,20,C.text,'left');txt(`${L.name}  ${s.t.toFixed(1)}s`,VW/2,50,16);
  rr(VW-62,12,46,40,10,'rgba(29,53,87,.15)');txt('↻',VW-39,42,26);
- if(li===0&&s.t<6&&attempts<3)txt('Hold SPACE / touch to grab • release to launch • ←/→ pump',VW/2,VH-24,18);}
+ if(li===0&&s.t<6&&attempts<3)txt('Tap SPACE / screen to grab • tap again to launch • ←/→ or bottom corners pump',VW/2,VH-24,18);}
 function button(x,y,w,h,label,i,on,ring){if(ring)rr(x-5,y-5,w+10,h+10,18,C.player);rr(x,y,w,h,14,on?C.player:'#fff');txt(label,x+w/2,y+h/2+8,22,on?'#fff':C.text);menuBoxes.push({x,y,w,h,i});}
 function draw(){cx.setTransform(1,0,0,1,0,0);cx.fillStyle=C.sky;cx.fillRect(0,0,cv.width,cv.height);cx.setTransform(scale,0,0,scale,ox,oy);
  cx.save();cx.beginPath();cx.rect(0,0,VW,VH);cx.clip();const gr=cx.createLinearGradient(0,0,0,VH);gr.addColorStop(0,C.sky);gr.addColorStop(1,C.sky2);cx.fillStyle=gr;cx.fillRect(0,0,VW,VH);
@@ -90,7 +91,7 @@ function draw(){cx.setTransform(1,0,0,1,0,0);cx.fillStyle=C.sky;cx.fillRect(0,0,
  if(screen==='title'){txt('SWING',VW/2,170,96,C.player);txt('grab • swing • release',VW/2,215,22);
   button(VW/2-180,245,360,100,`▶  START  (${S.LEVELS[sel].name})`,'start',true);
   S.LEVELS.forEach((L,i)=>button(VW/2-230+i*240,365,220,64,`${i+1}. ${L.name}`+(best[i]?`  ${best[i].toFixed(1)}s`:''),i,false,sel===i));
-  txt('Hold SPACE/↑/W or touch = grab   •   let go = launch   •   ←/→ or A/D (or bottom screen halves) = pump   •   R = restart',VW/2,490,15);}
+  txt('Tap SPACE/↑/W or screen = grab   •   tap again = launch   •   ←/→, A/D or bottom corners = pump   •   R = restart',VW/2,490,15);}
  else{drawWorld();if(screen==='done'){cx.fillStyle='rgba(255,255,255,.75)';cx.fillRect(0,0,VW,VH);txt('Level complete!',VW/2,170,56,C.player);
   txt(`Time ${doneT.toFixed(2)}s   •   Attempts ${attempts}`,VW/2,225,24);
   const hasNext=li+1<S.LEVELS.length;button(VW/2-330,280,200,70,hasNext?'Next level':'—',0,sel===0);button(VW/2-100,280,200,70,'Replay',1,sel===1);button(VW/2+130,280,200,70,'Menu',2,sel===2);}}
